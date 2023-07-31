@@ -1,111 +1,150 @@
 //Constantes
-const reduccion0 = 941000;
-const reduccion10 = 1381000;
-const reduccion15 = 2423000;
-const reduccion20 = 4845000;
-//Variables Globales
-let rentaCompleta = 0;
-let diccionario = {};
+const porcentajeCcss = 0.1067;
 
-//Metodos de solicitar datos
-function salarioCalculadoSegunLaMoneda() {
-    let salario = solicitarSalarioAlUsuario()
-    let tipoMoneda = prompt("Elegir una de las siguientes opciones: \n 1.Dolares\n 2.Colones")
-    if (tipoMoneda == 1) {
-        salario = salario * 549;
-    }
-    return salario;
-}
+//Variables 
+let salarioInput = document.getElementById("salario");
+let tipoCambioInput = document.getElementById("tipoCambio");
+let dropdownItems = document.querySelectorAll('.dropdown-item');
+let btnTipoCambio = document.getElementById('btnTipoCambio');
+let tipoCambio = "Dolares";
 
-function solicitarSalarioAlUsuario() {
-    let salario = prompt("Ingrese su salario:")
-    return salario;
+//Formato de los numeros
+let formatoNumeros = (numero) => {
+    const numeroFormateado =  new Intl.NumberFormat('es-CR', {
+        style: 'currency',
+        currency: 'CRC',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(numero);
+
+      return numeroFormateado;
 }
 
-function retornarTractosYDetalle() {
-    salario = salarioCalculadoSegunLaMoneda();
-    if (salario > 0) {
-        calculoRentaCompleta(salario);
-        console.log("Detalles\n");
-        console.log("Salario Bruto: " + salario + "\n");
-        console.log("Impuestos sobre la renta: " + rentaCompleta + "\n");
-        console.log("CCSS (10.67%): " + calculoDeduccionCaja(salario) + "\n");
-        console.log("Total de deducciones: " + calculoTotalDeducciones(salario) + "\n");
-        console.log("Salario neto: " + calculoSalarioNeto(salario) + "\n");
-        console.log("\n");
-        console.log("Tractos de cobros de renta\n");
-        console.log("Hasta " + reduccion0 + " se rebaja un 0% 0\n");
-        console.log("Sobre el excendente de " + reduccion0 + " hasta " + reduccion10 + " se rebaja un 10% " + eliminarUndefined(diccionario.renta10) + "\n");
-        console.log("Sobre el excendente de " + reduccion10 + " hasta " + reduccion15 + " se rebaja un 15% " + eliminarUndefined(diccionario.renta15) + "\n");
-        console.log("Sobre el excendente de " + reduccion15 + " hasta " + reduccion20 + " se rebaja un 20% " + eliminarUndefined(diccionario.renta20) + "\n");
-        console.log("Sobre el excendente de " + reduccion20 + " se rebaja un 25% " + eliminarUndefined(diccionario.renta25));
-    } else {
-        console.error("El salario debe ser mayor a 0!");
-    }
-}
-let eliminarUndefined = (numero) => {
-    return numero || 0;
-}
-
-let calculoTotalDeducciones = (salario) => {
-    return (salario - calculoSalarioNeto(salario));
-}
+// Calcula la deduccion de la CCSS
 let calculoDeduccionCaja = (salario) => {
-    return (salario * .1067);
+    return (salario * porcentajeCcss);
 }
 
+// Calcula salario sin deducciones
+let calculoSalarioBruto = (salario) => {
+    return salario;
+}
+
+//Calculo del salario neto
 let calculoSalarioNeto = (salario) => {
-    return (salario - rentaCompleta - calculoDeduccionCaja(salario));
+    tractos.forEach(tracto => {
+        salario -= tracto.montoDeduccion;
+    });
+    return salario;
 }
 
-let calculoRentaCompleta = (salario) => {
-    const matriz = [
-        { montoReduccion: reduccion0, metodoCalcular: calculoRenta10 },
-        { montoReduccion: reduccion10, metodoCalcular: calculoRenta15 },
-        { montoReduccion: reduccion15, metodoCalcular: calculoRenta20 },
-        { montoReduccion: reduccion20, metodoCalcular: calculoRenta25 }
-    ];
+//Calcula la renta de cada uno de los trctos
+let calculoRenta = (salario, tracto) => {
+    if (salario >= tracto.minimo) {
+        return ((salario - tracto.minimo) * tracto.deduccion)
+    }
+    return 0;
+}
 
-    for (let i = 0; i < matriz.length; i++) {
-        const { montoReduccion, metodoCalcular } = matriz[i];
+let calculoRentaSinMaximo = (salario, tracto) => {
+    if (salario >= tracto.minimo) {
+        return ((salario - tracto.minimo) * tracto.deduccion)
+    }
+    return 0;
+}
 
-        if (salario > montoReduccion) {
-            const renta = metodoCalcular(salario);
-            rentaCompleta += renta;
-            let nombreLlave = "renta" + (i * 5 + 10);
-            diccionario[nombreLlave] = renta;
+//Calcula la renta de cada uno de los tractos
+let calculoRentaTotal = () => {
+    let respuesta = 0;
+    tractos.forEach(tracto => {
+        respuesta += tracto.montoDeduccion;
+    });
+    return respuesta;
+}
 
+//Calcula total de deducciones
+let calculoDeduccionesTotales = (salario) => {
+    return (calculoDeduccionCaja(salario) + calculoRentaTotal());
+}
+
+let calculoSalarioTipoCambio = (salario) => {
+    if (tipoCambio == "Dolares") {
+        return salario * tipoCambioInput.value;
+    } else {
+        return salario;
+    }
+}
+
+//Lista de los tractos de deduccion de renta
+let tractos = [
+    { id: "exonerado", maximo: 941000, montoDeduccion: 0 },
+    { id: "renta10", minimo: 941000, maximo: 1381000, deduccion: 0.10, montoDeduccion: 0 },
+    { id: "renta15", minimo: 1381000, maximo: 2423000, deduccion: 0.15, montoDeduccion: 0 },
+    { id: "renta20", minimo: 2423000, maximo: 4845000, deduccion: 0.20, montoDeduccion: 0 },
+    { id: "renta25", minimo: 4845000, deduccion: 0.25, montoDeduccion: 0 }
+]
+
+//Lista del detalle
+let detalles = [
+    { id: "salarioBruto", monto: 0, metodoCalcular: calculoSalarioBruto },
+    { id: "impuestosRenta", monto: 0, metodoCalcular: calculoRentaTotal },
+    { id: "caja", monto: 0, metodoCalcular: calculoDeduccionCaja },
+    { id: "totalDeducciones", monto: 0, metodoCalcular: calculoDeduccionesTotales },
+    { id: "salarioNeto", monto: 0, metodoCalcular: calculoSalarioNeto }
+]
+
+//Llenar tablas
+//Crea la tabla de los tractos despues de calcular los montos de deduccion
+let insertarLinea = (id, monto) => {
+    const cell = document.getElementById(id);
+    cell.innerHTML = formatoNumeros(monto);
+}
+
+//Con este metodo se calcula lo que paga de renta por cada tracto
+// y se guarda en el monto de deduccion de cada objeto
+let calculoDetractos = (salario) => {
+    tractos.forEach(tracto => {
+        if (!tracto.hasOwnProperty('minimo')) {
+            tracto.montoDeduccion = 0;
+        } else {
+            tracto.montoDeduccion = calculoRenta(salario, tracto);
         }
-    }
+        insertarLinea(tracto.id, tracto.montoDeduccion);
+    });
 }
 
-//Calculo de renta segun el salario
-let calculoRenta10 = (salario) => {
-    if (salario >= reduccion10) {
-        return ((reduccion10 - reduccion0) * .10);
-    }
-    else {
-        return ((salario - reduccion0) * .10)
-    }
-}
-let calculoRenta15 = (salario) => {
-    if (salario >= reduccion15) {
-        return ((reduccion15 - reduccion10) * .15);
-    }
-    else {
-        return ((salario - reduccion10) * .15)
-    }
-}
-let calculoRenta20 = (salario) => {
-    if (salario >= reduccion20) {
-        return ((reduccion20 - reduccion15) * .20);
-    }
-    else {
-        return ((salario - reduccion15) * .20)
-    }
-}
-let calculoRenta25 = (salario) => {
-    return ((salario - reduccion20) * .25)
+// Se rellena el detalle para posteriormente crear y llenar la tabla
+let llenarDetalle = (salario) => {
+    detalles.forEach(detalle => {
+        if (typeof detalle.metodoCalcular === "function") {
+            if (detalle.metodoCalcular.length === 0) {
+                detalle.monto = detalle.metodoCalcular();
+            }
+            else {
+                detalle.monto = detalle.metodoCalcular(salario);
+            }
+        }
+        insertarLinea(detalle.id, detalle.monto);
+    });
 }
 
-retornarTractosYDetalle();
+// Agregar funcion para el boton del dropdown
+dropdownItems.forEach(item => {
+  item.addEventListener('click', function() {
+    const selectedValue = this.textContent;
+    btnTipoCambio.innerHTML = selectedValue;
+    tipoCambio = selectedValue;
+    if(selectedValue == "Dolares"){
+        tipoCambioInput.style.display = 'inline';
+    }else{
+        tipoCambioInput.style.display = 'none';
+    }
+  });
+});
+
+//Metodo principal
+function Calcular() {
+    let salario = salarioInput.value;
+    calculoDetractos(calculoSalarioTipoCambio(salario));
+    llenarDetalle(calculoSalarioTipoCambio(salario));
+}
