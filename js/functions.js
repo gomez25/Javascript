@@ -32,23 +32,20 @@ let calculoSalarioBruto = (salario) => {
 
 //Calculo del salario neto
 let calculoSalarioNeto = (salario) => {
-    tractos.forEach(tracto => {
-        salario -= tracto.montoDeduccion;
-    });
+    salario -= calculoDeduccionesTotales(salario);
     return salario;
 }
 
 //Calcula la renta de cada uno de los trctos
 let calculoRenta = (salario, tracto) => {
-    if (salario >= tracto.minimo) {
-        return ((salario - tracto.minimo) * tracto.deduccion)
+    if(!tracto.hasOwnProperty('maximo') && salario >= tracto.minimo){
+        return ((salario - tracto.minimo) * tracto.deduccion);   
     }
-    return 0;
-}
-
-let calculoRentaSinMaximo = (salario, tracto) => {
-    if (salario >= tracto.minimo) {
-        return ((salario - tracto.minimo) * tracto.deduccion)
+    else if (salario >= tracto.maximo) {
+        return tracto.deduccionMaxima;
+    }
+    else if (salario >= tracto.minimo) {
+        return ((salario - tracto.minimo) * tracto.deduccion);
     }
     return 0;
 }
@@ -78,9 +75,9 @@ let calculoSalarioTipoCambio = (salario) => {
 //Lista de los tractos de deduccion de renta
 let tractos = [
     { id: "exonerado", maximo: 941000, montoDeduccion: 0 },
-    { id: "renta10", minimo: 941000, maximo: 1381000, deduccion: 0.10, montoDeduccion: 0 },
-    { id: "renta15", minimo: 1381000, maximo: 2423000, deduccion: 0.15, montoDeduccion: 0 },
-    { id: "renta20", minimo: 2423000, maximo: 4845000, deduccion: 0.20, montoDeduccion: 0 },
+    { id: "renta10", minimo: 941000, maximo: 1381000, deduccion: 0.10, deduccionMaxima: 44000, montoDeduccion: 0 },
+    { id: "renta15", minimo: 1381000, maximo: 2423000, deduccion: 0.15, deduccionMaxima: 156300, montoDeduccion: 0 },
+    { id: "renta20", minimo: 2423000, maximo: 4845000, deduccion: 0.20, deduccionMaxima: 484000, montoDeduccion: 0 },
     { id: "renta25", minimo: 4845000, deduccion: 0.25, montoDeduccion: 0 }
 ]
 
@@ -144,25 +141,20 @@ dropdownItems.forEach(item => {
 
 //Metodo principal
 function Calcular() {
+    
+    Toastify({
+        text: "Calculando el salario!",
+        duration: 1000,
+        gravity: 'bottom',
+        position: 'left',
+        style: {
+            background: 'linear-gradient(to right, #00b09b, #96c92d)'
+        }
+    }).showToast();
     let salario = salarioInput.value;
     calculoDetractos(calculoSalarioTipoCambio(salario));
-    console.error("Hola");
     llenarDetalle(calculoSalarioTipoCambio(salario));
 }
 
-//Metodo tipo cambio
-function fetchTipoCambio() {
-    fetch('https://test.sistemamanejoseguros.com/api/tipocambio')
-      .then(response => response.json())
-      .then(data => {
-        tipoCambioInput.value = data;
-      })
-      .catch(error => {
-        console.error('Error:', error);
-      });
-  }
-  
-  document.addEventListener('DOMContentLoaded', function() {
-    fetchTipoCambio();
-  });
+
   
